@@ -1,8 +1,9 @@
-import numpy as np
-import pandas as pd
 import os
 import faiss
+import torch
 import struct
+import numpy as np
+import pandas as pd
 
 def sanitize(x):
     return np.ascontiguousarray(x, dtype='float32')
@@ -68,26 +69,7 @@ def load_gist1m(data_root, train_size=5*10**5, test_size=10**6):
     gt = generate_gt_nn(xb, xq)
     return xt, xb, xq, gt
 
-def load_cohere1m(data_root, train_size=10**5, test_size=None):
-    basedir = os.path.join(data_root, 'cohere1m/')
-    xb = parquet_read(basedir + "shuffle_train.parquet")
-    xt = xb[:train_size]
-    xb = xb[train_size:]
-    xq = parquet_read(basedir + 'test.parquet')
-    xt, xb, xq = sanitize(xt), sanitize(xb), sanitize(xq)
-    gt = generate_gt_nn(xb, xq)
-    return xt, xb, xq, gt
-
 def load_bigann1m(data_root, train_size=5*10**5, test_size=10**6):
-    basedir = os.path.join(data_root, 'bigann1b/')
-    xt = mmap_bvecs(basedir + 'bigann_learn.bvecs')[:train_size]
-    xb = mmap_bvecs(basedir + 'bigann_base.bvecs')[:test_size]
-    xq = mmap_bvecs(basedir + 'bigann_query.bvecs')
-    xt, xb, xq = sanitize(xt), sanitize(xb), sanitize(xq)
-    gt = generate_gt_nn(xb, xq)
-    return xt, xb, xq, gt
-
-def load_bigann10m(data_root, train_size=5*10**5, test_size=10**7):
     basedir = os.path.join(data_root, 'bigann1b/')
     xt = mmap_bvecs(basedir + 'bigann_learn.bvecs')[:train_size]
     xb = mmap_bvecs(basedir + 'bigann_base.bvecs')[:test_size]
@@ -105,53 +87,31 @@ def load_deep1m(data_root, train_size=5*10**5, test_size=10**6):
     gt = generate_gt_nn(xb, xq)
     return xt, xb, xq, gt
 
-def load_tti1m(data_root, train_size=5*10**5, test_size=10**6):
-    basedir = os.path.join(data_root, 'Text2Image-10M/')
-    xt = read_fbin(basedir + 'query.learn.50M.fbin')[:train_size]
-    xb = read_fbin(basedir + 'base.1M.fbin')[:test_size]
-    xq = read_fbin(basedir + 'query.public.100K.fbin')
-    xt, xb, xq = sanitize(xt), sanitize(xb), sanitize(xq)
-    gt = generate_gt_nn(xb, xq)
-    return xt, xb, xq, gt
+class VectorDataset:
+    def __init__(self, dataset='sift1m', data_path=None, normalize=True, train_size=10**5, test_size=10**6, device='cpu'):
+        assert data_path is not None, "data_path must be specified"
+        self.dataset = dataset
+        self.data_path = data_path
+        self.normalize = normalize
 
-def load_mmws(data_root, train_size=5*10**5, test_size=10**6):
-    basedir = os.path.join(data_root, 'MS-MARCO-Web-Search/')
-    vectors = read_bin(basedir + 'vectors.bin')
-    xt = vectors[:train_size]
-    xb = vectors[train_size:train_size+test_size]
-    xq = read_bin(basedir + 'query.bin')
-    xt, xb, xq = sanitize(xt), sanitize(xb), sanitize(xq)
-    gt = generate_gt_nn(xb, xq)
-    return xt, xb, xq, gt
+        xt, xb, xq, gt = READER[dataset](data_path, train_size, test_size)
+        
+        self.xt = torch.from_numpy(xt).to(device)
+        self.xb = torch.from_numpy(xb).to(device)
+        self.xq = torch.from_numpy(xq).to(device)
+        self.gt = gt
 
-def load_deep10m(data_root, train_size=5*10**5, test_size=10**7):
-    basedir = os.path.join(data_root, 'deep1b/')
-    xt = read_fbin(basedir + 'learn.350M.fbin')[:train_size]
-    xb = read_fbin(basedir + 'base.1B.fbin')[:test_size]
-    xq = read_fbin(basedir + 'query.public.10K.fbin')
-    xt, xb, xq = sanitize(xt), sanitize(xb), sanitize(xq)
-    gt = generate_gt_nn(xb, xq)
-    return xt, xb, xq, gt
-
-def load_deep1b(data_root, train_size=5*10**5, test_size=10**9):
-    basedir = os.path.join(data_root, 'deep1b/')
-    xt = read_fbin(basedir + 'learn.350M.fbin')[:train_size]
-    xb = read_fbin(basedir + 'base.1B.fbin')[:test_size]
-    xq = read_fbin(basedir + 'query.public.10K.fbin')
-    xt, xb, xq = sanitize(xt), sanitize(xb), sanitize(xq)
-    gt = generate_gt_nn(xb, xq)
-    return xt, xb, xq, gt
+        if normalize:
+            mean_norm = self.xt.norm(p=2, dim=-1).mean().item()
+            self.xt = self.xt / mean_norm
+            self.xb = self.xb / mean_norm
+            self.xq = self.xq / mean_norm
 
 
 READER = {
     'sift1m': load_sift1m,
-    'mmws1m': load_mmws,
     'gist1m': load_gist1m,
-    'cohere1m': load_cohere1m,
     'bigann1m': load_bigann1m,
-    'bigann10m': load_bigann10m,
-    'deep1m': load_deep1m,
-    'deep10m': load_deep10m,
-    'tti1m': load_tti1m
+    'deep1m': load_deep1m
 }
     

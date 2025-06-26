@@ -4,7 +4,7 @@ import json
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
-from data import VectorDataset
+from dataset import VectorDataset
 from model import PDT
 from utils import eval
 import argparse

@@ -4,7 +4,7 @@ import numpy as np
 import os
 
 from torch.optim import AdamW
-from data import VectorDataset
+from dataset import VectorDataset
 from model import PDT
 from utils import train_one_epoch, eval, Logger, Scheduler, compute_mse
 
@@ -13,15 +13,15 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 def get_args():
     parser = argparse.ArgumentParser()
     group_dataset = parser.add_argument_group('Dataset Options')
-    group_dataset.add_argument("--dataset", type=str, default="sift1m")
-    group_dataset.add_argument("--data_root", type=str, default="/home/zhouxin/datasets")
-    group_dataset.add_argument("--normalize", type=bool, default=True)
-    group_dataset.add_argument("--train_size", type=int, default=5*10**5)
-    group_dataset.add_argument("--test_size", type=int, default=10**6)
-    group_dataset.add_argument("--val_size", type=int, default=10**5)
+    group_dataset.add_argument("--dataset", type=str, required=True, choices=['sift1m', 'gist1m', 'bigann1m', 'deep1m'],)
+    group_dataset.add_argument("--data_root", type=str, required=True, help='The root directory of the dataset')
+    group_dataset.add_argument("--normalize", type=bool, default=True, help='Whether to normalize the dataset vectors')
+    group_dataset.add_argument("--train_size", type=int, default=5*10**5, help='The number of training vectors')
+    group_dataset.add_argument("--test_size", type=int, default=10**6, help='The number of test vectors')
+    group_dataset.add_argument("--val_size", type=int, default=10**5, help='The number of validation vectors')
 
     group_model = parser.add_argument_group('Model Options')
-    group_model.add_argument("--d_hidden", type=int, default=256)
+    group_model.add_argument("--d_hidden", type=int, default=256, help='The hidden dimension of the model')
     group_model.add_argument("--M", type=int, default=16, help='The number of codes each vector')
     group_model.add_argument("--K", type=int, default=2**8, help='The number of centriods in each code')
     
