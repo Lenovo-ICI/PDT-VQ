@@ -8,8 +8,6 @@ from dataset import VectorDataset
 from model import PDT
 from utils import train_one_epoch, eval, Logger, Scheduler, compute_mse
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-
 def get_args():
     parser = argparse.ArgumentParser()
     group_dataset = parser.add_argument_group('Dataset Options')

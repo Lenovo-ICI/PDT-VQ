@@ -88,8 +88,6 @@ class MultiStepNonLinear(nn.Module):
                 NonLinear(d, d_hidden, heads, step_norm, head_norm)
             )
     def forward(self, x, out_step=None, mode='encoder'):
-        # en: in -> 0  de: steps-1 -> out
-        # en: in -> 0 -> 1 de: steps-2 -> steps-1 -> out
         xs = []
         if mode == 'encoder':
             for i in range(out_step):

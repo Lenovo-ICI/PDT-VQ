@@ -52,37 +52,33 @@ def generate_gt_nn(xb, xq, k=100):
     return gt
 
 def load_sift1m(data_root, train_size=5*10**5, test_size=10**6, mode='train'):
-    basedir = os.path.join(data_root, 'sift1m/')
-    xt = mmap_fvecs(basedir + 'sift_learn.fvecs')[:train_size]
-    xb = mmap_fvecs(basedir + 'sift_base.fvecs')[:test_size]
-    xq = mmap_fvecs(basedir + 'sift_query.fvecs')
+    xt = mmap_fvecs(data_root + '/sift_learn.fvecs')[:train_size]
+    xb = mmap_fvecs(data_root + '/sift_base.fvecs')[:test_size]
+    xq = mmap_fvecs(data_root + '/sift_query.fvecs')
     gt = generate_gt_nn(xb, xq)
     xt, xb, xq = sanitize(xt), sanitize(xb), sanitize(xq)
     return xt, xb, xq, gt
 
 def load_gist1m(data_root, train_size=5*10**5, test_size=10**6):
-    basedir = os.path.join(data_root, 'gist1m/')
-    xt = mmap_fvecs(basedir + 'gist_learn.fvecs')[:train_size]
-    xb = mmap_fvecs(basedir + 'gist_base.fvecs')[:test_size]
-    xq = mmap_fvecs(basedir + 'gist_query.fvecs')
+    xt = mmap_fvecs(data_root + '/gist_learn.fvecs')[:train_size]
+    xb = mmap_fvecs(data_root + '/gist_base.fvecs')[:test_size]
+    xq = mmap_fvecs(data_root + '/gist_query.fvecs')
     xt, xb, xq = sanitize(xt), sanitize(xb), sanitize(xq)
     gt = generate_gt_nn(xb, xq)
     return xt, xb, xq, gt
 
 def load_bigann1m(data_root, train_size=5*10**5, test_size=10**6):
-    basedir = os.path.join(data_root, 'bigann1b/')
-    xt = mmap_bvecs(basedir + 'bigann_learn.bvecs')[:train_size]
-    xb = mmap_bvecs(basedir + 'bigann_base.bvecs')[:test_size]
-    xq = mmap_bvecs(basedir + 'bigann_query.bvecs')
+    xt = mmap_bvecs(data_root + '/bigann_learn.bvecs')[:train_size]
+    xb = mmap_bvecs(data_root + '/bigann_base.bvecs')[:test_size]
+    xq = mmap_bvecs(data_root + '/bigann_query.bvecs')
     xt, xb, xq = sanitize(xt), sanitize(xb), sanitize(xq)
     gt = generate_gt_nn(xb, xq)
     return xt, xb, xq, gt
 
 def load_deep1m(data_root, train_size=5*10**5, test_size=10**6):
-    basedir = os.path.join(data_root, 'deep1b/')
-    xt = read_fbin(basedir + 'learn.350M.fbin')[:train_size]
-    xb = read_fbin(basedir + 'base.1B.fbin')[:test_size]
-    xq = read_fbin(basedir + 'query.public.10K.fbin')
+    xt = read_fbin(data_root + '/learn.350M.fbin')[:train_size]
+    xb = read_fbin(data_root + '/base.1B.fbin')[:test_size]
+    xq = read_fbin(data_root + '/query.public.10K.fbin')
     xt, xb, xq = sanitize(xt), sanitize(xb), sanitize(xq)
     gt = generate_gt_nn(xb, xq)
     return xt, xb, xq, gt

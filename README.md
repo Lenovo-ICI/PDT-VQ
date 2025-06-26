@@ -1,6 +1,35 @@
 # PDT-VQ: Boosting Deep Vector Quantization with Progressive Distribution Transformation
 
-This repository contains the offitial implementation of the KDD'25 paper Boosting Deep Vector Quantization with Progressive Distribution Transformation.
+This repository contains the offitial implementation of the KDD'25 paper "Boosting Deep Vector Quantization with Progressive Distribution Transformation".
+
+## Install
+To set up the environment for PDT, follow these steps:
+
+```bash
+# Clone the repository
+git clone https://github.com/Lenovo-ICI/PDT-VQ
+cd PDT-VQ
+# Create the conda environment using the provided configuration
+conda env create -f environment.yml
+```
+
+## Data preparation
+
+Download all datasets (BigANN, Deep, Sift1M, Gist1M) with:
+
+```
+sh download_data.sh
+```
+
+Or specify one or more individual datasets: 
+
+```
+sh download_data.sh <dataset_name_1> <dataset_name_2> ...
+```
+
+## Training and Evaluation
+
+
 
 ## References
 

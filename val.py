@@ -2,7 +2,6 @@ import argparse
 import torch
 import json
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 from dataset import VectorDataset
 from model import PDT

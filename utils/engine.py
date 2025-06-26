@@ -27,8 +27,6 @@ def train_one_epoch(model, xt, optimizer, args):
         optimizer.step()
 
         sum_loss += loss.item()
-        # if iter % (iters // 2) == 0:
-        #     log.log_train(iteration=iter, lr=lr, loss=loss)
     return sum_loss / iters
 
 @torch.no_grad()
@@ -52,19 +50,19 @@ def eval(model, xt, xb, xq, groundtruth, args):
     return recalls
 
 def inference_exact(model, xt, xb, xq, groundtruth, args):
-    xb_trans = batch_forward(model.encode, xb, args.batch_size)
+    xb_trans = batch_forward(model.encode, xb, args.batch_size, args.steps)[-1]
     codes = batch_forward(model.get_codes, xb_trans, args.batch_size)
     xb_recon_vq = batch_forward(model.reconstruction, codes, args.batch_size)
-    xb_recon = batch_forward(model.decode, xb_recon_vq, args.batch_size)
+    xb_recon = batch_forward(model.decode, xb_recon_vq, args.batch_size)[-1]
     pred_nn = get_nearestneighbors(xb_recon.data.cpu().numpy(), xq.data.cpu().numpy(), 100, args.device)
     recalls = eval_recall(pred_nn, groundtruth, [[1,1], [1,10], [1,100]])
     return recalls
 
 def inference_with_reranking(model, xt, xb, xq, groundtruth, args):
-    xb_trans = batch_forward(model.encode, xb, args.batch_size)
+    xb_trans = batch_forward(model.encode, xb, args.batch_size, args.steps)[-1]
     codes = batch_forward(model.get_codes, xb_trans, args.batch_size)
     if args.vq_type == 'qinco':
-        xt_trans = batch_forward(model.encode, xt, args.batch_size)
+        xt_trans = batch_forward(model.encode, xt, args.batch_size, args.steps)[-1]
         xt_codes = batch_forward(model.get_codes, xt_trans, args.batch_size)
         fixed_codebook = compute_fixed_codebooks(xt_trans.cpu().numpy(), xt_codes.cpu().numpy(), model.K)
         xb_recon = reconstruct_from_fixed_codebooks(codes.cpu().numpy(), fixed_codebook)
@@ -74,7 +72,7 @@ def inference_with_reranking(model, xt, xb, xq, groundtruth, args):
         xb_recon = batch_forward(model.reconstruction, codes, args.batch_size)
         xb_recon_model = xb_recon
 
-    xq_trans = batch_forward(model.encode, xq, args.batch_size)
+    xq_trans = batch_forward(model.encode, xq, args.batch_size, args.steps)[-1]
 
     pred_nn = get_nearestneighbors(xb_recon.data.cpu().numpy(), xq_trans.data.cpu().numpy(), args.L, args.device)
     pred_nn = torch.from_numpy(pred_nn).to(xb_recon.device)  # [nq, L]
@@ -82,12 +80,12 @@ def inference_with_reranking(model, xt, xb, xq, groundtruth, args):
     if args.re_rank:
         for L in 10, 20, 50, 100, 200, 500, 1000:
             one_step_size = max(1, int((args.batch_size / L)))  # reduce the GPU memory usage
-            pred_nn_L = re_ranking(xb_recon_model, xq, pred_nn[:, :L], model.decode, L, batch_size=args.batch_size, one_step_size=one_step_size)
+            pred_nn_L = re_ranking(xb_recon_model, xq, pred_nn[:, :L], model.decode, L, args.steps, batch_size=args.batch_size, one_step_size=one_step_size)
     
             recalls.append((L, eval_recall(pred_nn_L.data.cpu().numpy(), groundtruth, [[1,1], [1,10], [1,100]])))
     return recalls
 
-def re_ranking(xb, xq, pred_nn, decoder, L, batch_size=256, one_step_size=100):
+def re_ranking(xb, xq, pred_nn, decoder, L, i_step, batch_size=256, one_step_size=100):
     """
     xb: base vector reconstructed by the sub-codebook
     xq: original query vector
@@ -102,7 +100,7 @@ def re_ranking(xb, xq, pred_nn, decoder, L, batch_size=256, one_step_size=100):
         selected_xq = xq[i0:i0 + one_step_size]
         selected_xb = xb[selected_pre_nn]
         selected_xb = rearrange(selected_xb, 'n k d -> (n k) d')
-        selected_xb_decode = batch_forward(decoder, selected_xb, batch_size)
+        selected_xb_decode = batch_forward(decoder, selected_xb, batch_size, i_step)[-1]
         selected_xb_decode = rearrange(selected_xb_decode, '(n k) d -> n k d', k=L)
         dist = F.pairwise_distance(selected_xb_decode, selected_xq[:, None], 2)
         _, idx = torch.sort(dist, -1)  # [nq, L]
@@ -110,18 +108,23 @@ def re_ranking(xb, xq, pred_nn, decoder, L, batch_size=256, one_step_size=100):
     final_nn = torch.cat(final_nn, 0)
     return final_nn
 
-def batch_forward(model, x_all, bs):
+def batch_forward(model, x_all, bs, i_step=None):
+    multi_out = True
     for k, i0 in enumerate(range(0, x_all.shape[0], bs)):
         x = x_all[i0:i0 + bs]
-        output = model(x)
-        if not isinstance(output, Tuple):
+        if i_step is None:
+            output = model(x)
+        else:
+            output = model(x, i_step)
+        if not isinstance(output, Tuple) and not isinstance(output, list):
+            multi_out = False
             output = [output]
         if k == 0:
             results = [[output[i]] for i in range(len(output))]
         else:
             for i in range(len(output)):
                 results[i].append(output[i])
-    return [torch.cat(results[i]) for i in range(len(results))] if len(results) != 1 else torch.cat(results[0])
+    return [torch.cat(results[i]) for i in range(len(results))] if multi_out else torch.cat(results[0])
 
 def one_hot(codes, k):
     """return a one-hot matrix where each code is represented as a 1"""
