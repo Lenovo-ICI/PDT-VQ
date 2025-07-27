@@ -29,6 +29,19 @@ sh download_data.sh <dataset_name_1> <dataset_name_2> ...
 
 ## Training and Evaluation
 
+Run training with:
+
+```
+sh scripts/exp_<dataset_name>_<vq_type>.sh
+```
+
+Run evaluation only with:
+
+```
+python val.py --exp_path <exp_path>
+```
+
+where `<exp_path>` is the path of experiment logs.
 
 
 ## References

@@ -149,7 +149,6 @@ class QINCo(nn.Module):
     QINCo quantizer, built from a chain of residual quantization steps
     """
 
-    # def __init__(self, d, K, L, M, h):
     def __init__(self, d, M, K, h=256, L=1, init='uniform', **kwargs):
         nn.Module.__init__(self)
         self.d, self.K, self.L, self.M, self.h = d, K, L, M, h
@@ -256,15 +255,12 @@ class QINCo(nn.Module):
         with torch.no_grad():
             codes, xhat = self.encode(x)
         # then decode step by step and collect losses
-        # losses = torch.zeros(len(self.steps) + 1)
         xhat = self.codebook0(codes[:, 0])
         side_output = [xhat]
         
-        # losses[0] = ((xhat - x) ** 2).sum()
         for i, step in enumerate(self.steps):
             xhat = xhat + step.decode(xhat, codes[:, i + 1])
             side_output.append(xhat)
-            # losses[i + 1] = ((xhat - x) ** 2).sum()
         
         # return codes, xhat, losses
         return xhat, codes, side_output

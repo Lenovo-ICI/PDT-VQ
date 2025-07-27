@@ -8,7 +8,8 @@ from collections import OrderedDict
 class Logger:
     def __init__(self, args):
         self.args = args
-        exp_sign = '[{}]-{}-{}-{}_transform-M{}-K{}-D{}-S{}-H{}-L{}-{}_init-rerank_{}'.format(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()), args.dataset, args.vq_type, args.trans_type, args.M, args.K, args.d_hidden, args.steps, args.heads, args.L, args.codebook_init, args.re_rank)
+        supervision = "ms_sup" if args.ms_sup else "ss_sup"
+        exp_sign = '{}-{}-{}_transform-M{}-K{}-D{}-S{}-H{}-L{}-{}_init-rerank_{}-{}'.format(args.dataset, args.vq_type, args.trans_type, args.M, args.K, args.d_hidden, args.steps, args.heads, args.L, args.codebook_init, args.re_rank, supervision)
         
         if self.args.log:
             self.log_path = generate_path(os.path.join(args.log_path, exp_sign))
