@@ -21,7 +21,7 @@ Download all datasets (BigANN, Deep, Sift1M, Gist1M) with:
 sh download_data.sh
 ```
 
-Or specify one or more individual datasets: 
+Or specify one or more individual datasets (sift1m, gist1m, deep, bigann): 
 
 ```
 sh download_data.sh <dataset_name_1> <dataset_name_2> ...
